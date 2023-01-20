@@ -5,7 +5,7 @@
 #include "include.h"
 #include "common.h"
 
-__global__ void kernel_multisampling(uint32_t* result, uint32_t* data, uint32_t dW, uint32_t dH, uint32_t sampling) {
+__global__ void kernel_multisampling(uint32_t* result, uint32_t* data, int32_t dW, int32_t dH, int32_t sampling) {
    int x = (blockIdx.x * blockDim.x + threadIdx.x);
    int y = (blockIdx.y * blockDim.y + threadIdx.y);
    uint64_t val = 0;
@@ -20,7 +20,7 @@ __global__ void kernel_multisampling(uint32_t* result, uint32_t* data, uint32_t 
    result[x + y * dW] = val / sampling;
 }
 
-int32_t multisampling(uint32_t* result, uint32_t* data, uint32_t dW, uint32_t dH, uint32_t multisampling) {
+int32_t multisampling(uint32_t* result, uint32_t* data, int32_t dW, int32_t dH, int32_t multisampling) {
    uint32_t* cuda_result = 0;
    uint32_t* cuda_data = 0;
 

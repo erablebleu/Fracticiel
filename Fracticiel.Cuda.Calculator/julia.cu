@@ -6,7 +6,7 @@
 #include "include.h"
 #include "common.h"
 
-__global__ void kernel_julia(uint32_t* result, uint32_t dW, uint32_t dH, double x0, double y0, double res, uint32_t maxLoopCnt, double maxMagnitude, double cx, double cy) {
+__global__ void kernel_julia(uint32_t* result, int32_t dW, int32_t dH, double x0, double y0, double res, int32_t maxLoopCnt, double maxMagnitude, double cx, double cy) {
    int i = (blockIdx.x * blockDim.x + threadIdx.x);
    int j = (blockIdx.y * blockDim.y + threadIdx.y);
 
@@ -29,18 +29,18 @@ __global__ void kernel_julia(uint32_t* result, uint32_t dW, uint32_t dH, double 
    }
 }
 
-int32_t julia(uint32_t* result, uint32_t dW, uint32_t dH, double x, double y, double res, uint32_t maxLoopCnt, double maxMagnitude, double cx, double cy) {
+int32_t julia(uint32_t* result, const DataBlock* block, const Settings_Julia* settings) {
    uint32_t* cuda_result = 0;
 
    CUDA_ASSERT_SUCCESS(cudaSetDevice(0));
    CUDA_ASSERT_SUCCESS(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
-   CUDA_ASSERT_SUCCESS(cudaMalloc((void**)&cuda_result, dW * dH * sizeof(uint32_t)));
+   CUDA_ASSERT_SUCCESS(cudaMalloc((void**)&cuda_result, block->Width * block->Height * sizeof(uint32_t)));
    dim3 threadsPerBlock(16, 16);
-   dim3 numBlocks(dW / threadsPerBlock.x + 1, dH / threadsPerBlock.y + 1);
-   kernel_julia << <numBlocks, threadsPerBlock >> > (cuda_result, dW, dH, x, y, res, maxLoopCnt, maxMagnitude, cx, cy);
+   dim3 numBlocks(block->Width / threadsPerBlock.x + 1, block->Height / threadsPerBlock.y + 1);
+   kernel_julia << <numBlocks, threadsPerBlock >> > (cuda_result, block->Width, block->Height, block->X, block->Y, block->Resolution, settings->LoopCount, settings->Magnitude, settings->CX, settings->CY);
    CUDA_ASSERT_SUCCESS(cudaGetLastError());
    CUDA_ASSERT_SUCCESS(cudaDeviceSynchronize());
-   CUDA_ASSERT_SUCCESS(cudaMemcpy(result, cuda_result, dW * dH * sizeof(uint32_t), cudaMemcpyDeviceToHost));
+   CUDA_ASSERT_SUCCESS(cudaMemcpy(result, cuda_result, block->Width * block->Height * sizeof(uint32_t), cudaMemcpyDeviceToHost));
    CUDA_ASSERT_SUCCESS(cudaFree(cuda_result));
    CUDA_ASSERT_SUCCESS(cudaDeviceReset());
 

@@ -6,8 +6,8 @@
 #include "include.h"
 #include "common.h"
 
-__global__ void kernel_colorizeBW(uint8_t* result, uint32_t* data, uint32_t sz, uint32_t min, uint32_t max) {
-   int i = (blockIdx.x * blockDim.x + threadIdx.x);
+__global__ void kernel_colorizeBW(uint8_t* result, uint32_t* data, int32_t sz, uint32_t min, uint32_t max) {
+   int32_t i = (blockIdx.x * blockDim.x + threadIdx.x);
    uint32_t val = data[i];
    if (i >= sz)
       return;
@@ -20,7 +20,7 @@ __global__ void kernel_colorizeBW(uint8_t* result, uint32_t* data, uint32_t sz, 
    }
 }
 
-int32_t colorizeBW(uint8_t* result, uint32_t* data, uint32_t sz, uint32_t min, uint32_t max) {
+int32_t colorizeBW(uint8_t* result, uint32_t* data, int32_t sz, uint32_t min, uint32_t max) {
    uint8_t* cuda_result = 0;
    uint32_t* cuda_data = 0;
 
@@ -41,8 +41,8 @@ int32_t colorizeBW(uint8_t* result, uint32_t* data, uint32_t sz, uint32_t min, u
    return cudaSuccess;
 }
 
-__global__ void kernel_colorizeRGB(uint32_t* result, uint32_t* data, uint32_t sz, uint32_t min, uint32_t max) {
-   int i = (blockIdx.x * blockDim.x + threadIdx.x);
+__global__ void kernel_colorizeRGB(uint32_t* result, uint32_t* data, int32_t sz, uint32_t min, uint32_t max) {
+   int32_t i = (blockIdx.x * blockDim.x + threadIdx.x);
    uint32_t val = data[i];
    if (i >= sz)
       return;
@@ -54,7 +54,7 @@ __global__ void kernel_colorizeRGB(uint32_t* result, uint32_t* data, uint32_t sz
    }
 }
 
-int32_t colorizeRGB(uint32_t* result, uint32_t* data, uint32_t sz, uint32_t min, uint32_t max) {
+int32_t colorizeRGB(uint32_t* result, uint32_t* data, int32_t sz, uint32_t min, uint32_t max) {
    uint32_t* cuda_result = 0;
    uint32_t* cuda_data = 0;
 

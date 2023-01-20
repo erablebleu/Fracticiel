@@ -1,0 +1,79 @@
+﻿<Window x:Class="Fracticiel.UI.Views.MainView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Fracticiel.UI.Views"
+        xmlns:vm="clr-namespace:Fracticiel.UI.ViewModels"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance vm:MainViewModel}"
+        Title="MainView" Height="450" Width="800">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="File">
+                <MenuItem Header="Export..." Command="{Binding ExportCommand}"/>
+            </MenuItem>
+        </Menu>
+        <StackPanel DockPanel.Dock="Top">
+            <TextBlock x:Name="tb_pos" />
+            <TextBlock x:Name="tb_state" />
+            <TextBlock x:Name="tb_time" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Column="0" Grid.Row="0" Text="Width (px)"/>
+                <TextBlock Grid.Column="0" Grid.Row="1" Text="Height (px)"/>
+                <TextBlock Grid.Column="0" Grid.Row="2" Text="X"/>
+                <TextBlock Grid.Column="0" Grid.Row="3" Text="Y"/>
+                <TextBlock Grid.Column="0" Grid.Row="4" Text="Width"/>
+                <TextBlock Grid.Column="0" Grid.Row="5" Text="Multi Sampling"/>
+                <TextBlock Grid.Column="0" Grid.Row="6" Text="Use Block Calculation"/>
+                <TextBlock Grid.Column="0" Grid.Row="7" Text="Block Calculation Size"/>
+                <TextBlock Grid.Column="0" Grid.Row="8" Text="Mode"/>
+
+                <xctk:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="10" Maximum="10000" Value="{Binding Width}"/>
+                <xctk:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="10" Maximum="10000" Value="{Binding Height}"/>
+                <xctk:DoubleUpDown Grid.Column="1" Grid.Row="2" Minimum="-2" Maximum="2" Value="{Binding X}"/>
+                <xctk:DoubleUpDown Grid.Column="1" Grid.Row="3" Minimum="-2" Maximum="2" Value="{Binding Y}"/>
+                <xctk:DoubleUpDown Grid.Column="1" Grid.Row="4" Minimum="0" Maximum="4" Value="{Binding WidthRes}"/>
+                <xctk:IntegerUpDown Grid.Column="1" Grid.Row="5" Minimum="1" Maximum="64" Value="{Binding MultiSampling}"/>
+                <CheckBox Grid.Column="1" Grid.Row="6" IsChecked="{Binding UseBlockCalculation}"/>
+                <xctk:IntegerUpDown Grid.Column="1" Grid.Row="7" Minimum="10" Maximum="10000" Value="{Binding BlockCalculationSize}" IsEnabled="{Binding UseBlockCalculation}"/>
+                <ComboBox Grid.Column="1" Grid.Row="8" SelectedIndex="{Binding Mode}">
+                    <ComboBoxItem>Mandelbrot</ComboBoxItem>
+                    <ComboBoxItem>Buddhabrot</ComboBoxItem>
+                    <ComboBoxItem>Julia</ComboBoxItem>
+                </ComboBox>
+
+            </Grid>
+            <Button Content="Draw" Command="{Binding DrawCommand}"/>
+            <ProgressBar Value="{Binding Progress}" Maximum="1" Height="5"/>
+        </StackPanel>
+        <Border Background="Black">
+            <Viewbox Stretch="Uniform" >
+                <Image x:Name="image" Source="{Binding Bitmap}"/>
+
+            </Viewbox>
+
+            <Border.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Save as..." Command="{Binding ExportCommand}"/>
+                </ContextMenu>
+            </Border.ContextMenu>
+        </Border>
+    </DockPanel>
+</Window>

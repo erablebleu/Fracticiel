@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Adapters\" />
+    <Folder Include="Model\" />
     <Folder Include="Resources\Enums\" />
     <Folder Include="Resources\Converters\" />
     <Folder Include="Resources\Extensions\" />
@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy /Y $(SolutionDir)Fracticiel.Cuda.Calculator\bin\x64\$(Configuration)\Fracticiel.Cuda.Calculator.dll $(TargetDir)Fracticiel.Cuda.Calculator.dll" />
+    <Exec Command="copy /Y $(SolutionDir)\x64\Debug\Fracticiel.Cuda.Calculator.dll $(TargetDir)\Fracticiel.Cuda.Calculator.dll" />
   </Target>
 
 </Project>

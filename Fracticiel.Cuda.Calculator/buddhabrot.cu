@@ -6,7 +6,7 @@
 #include "include.h"
 #include "common.h"
 
-__global__ void kernel_buddhabrot_divergence(bool* result, uint32_t dW, uint32_t dH, double x0, double y0, double res, uint32_t maxLoopCnt, double maxMagnitude) {
+__global__ void kernel_buddhabrot_divergence(bool* result, int32_t dW, int32_t dH, double x0, double y0, double res, int32_t maxLoopCnt, double maxMagnitude) {
    int i = (blockIdx.x * blockDim.x + threadIdx.x);
    int j = (blockIdx.y * blockDim.y + threadIdx.y);
 
@@ -34,13 +34,16 @@ __global__ void kernel_buddhabrot_divergence(bool* result, uint32_t dW, uint32_t
    *p = cnt >= maxLoopCnt;
 }
 
-__global__ void kernel_buddhabrot(uint32_t* result, bool* diverg, uint32_t dW, uint32_t dH, double x0, double y0, double res, uint32_t maxLoopCnt, double maxMagnitude, uint32_t maxValue) {
+__global__ void kernel_buddhabrot(uint32_t* result, bool* diverg, int32_t dW, int32_t dH, double x0, double y0, double res, int32_t maxLoopCnt, double maxMagnitude, uint32_t maxValue) {
    int i = (blockIdx.x * blockDim.x + threadIdx.x);
    int j = (blockIdx.y * blockDim.y + threadIdx.y);
 
    if (i >= dW || j >= dH || diverg[j * dW + i])
       return;
 
+   // TODO: divergent loop here
+
+   // TODO: random cx, cy
    double cx = x0 + (double)i * res;
    double cy = y0 + (double)j * res;
    uint32_t cnt = 0;
@@ -70,23 +73,23 @@ __global__ void kernel_buddhabrot(uint32_t* result, bool* diverg, uint32_t dW, u
    }
 }
 
-int32_t buddhabrot(uint32_t* result, uint32_t dW, uint32_t dH, double x, double y, double res, uint32_t maxLoopCnt, double maxMagnitude, uint32_t maxValue) {
+int32_t buddhabrot(uint32_t* result, const DataBlock* block, const Settings_Buddhabrot* settings) {
    uint32_t* cuda_result = 0;
    bool* cuda_diverg = 0;
 
    CUDA_ASSERT_SUCCESS(cudaSetDevice(0));
    CUDA_ASSERT_SUCCESS(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
-   CUDA_ASSERT_SUCCESS(cudaMalloc((void**)&cuda_result, dW * dH * sizeof(uint32_t)));
-   CUDA_ASSERT_SUCCESS(cudaMalloc((void**)&cuda_diverg, dW * dH * sizeof(bool)));
+   CUDA_ASSERT_SUCCESS(cudaMalloc((void**)&cuda_result, block->Width * block->Height * sizeof(uint32_t)));
+   CUDA_ASSERT_SUCCESS(cudaMalloc((void**)&cuda_diverg, block->Width * block->Height * sizeof(bool)));
    dim3 threadsPerBlock(16, 16);
-   dim3 numBlocks(dW / threadsPerBlock.x + 1, dH / threadsPerBlock.y + 1);
-   kernel_buddhabrot_divergence << <numBlocks, threadsPerBlock >> > (cuda_diverg, dW, dH, x, y, res, maxLoopCnt, maxMagnitude);
+   dim3 numBlocks(block->Width / threadsPerBlock.x + 1, block->Height / threadsPerBlock.y + 1);
+   kernel_buddhabrot_divergence << <numBlocks, threadsPerBlock >> > (cuda_diverg, block->Width, block->Height, block->X, block->Y, block->Resolution, settings->LoopCount, settings->Magnitude);
    CUDA_ASSERT_SUCCESS(cudaGetLastError());
    CUDA_ASSERT_SUCCESS(cudaDeviceSynchronize());
-   kernel_buddhabrot << <numBlocks, threadsPerBlock >> > (cuda_result, cuda_diverg, dW, dH, x, y, res, maxLoopCnt, maxMagnitude, maxValue);
+   kernel_buddhabrot << <numBlocks, threadsPerBlock >> > (cuda_result, cuda_diverg, block->Width, block->Height, block->X, block->Y, block->Resolution, settings->LoopCount, settings->Magnitude, settings->MaxValue);
    CUDA_ASSERT_SUCCESS(cudaGetLastError());
    CUDA_ASSERT_SUCCESS(cudaDeviceSynchronize());
-   CUDA_ASSERT_SUCCESS(cudaMemcpy(result, cuda_result, dW * dH * sizeof(uint32_t), cudaMemcpyDeviceToHost));
+   CUDA_ASSERT_SUCCESS(cudaMemcpy(result, cuda_result, block->Width * block->Height * sizeof(uint32_t), cudaMemcpyDeviceToHost));
    CUDA_ASSERT_SUCCESS(cudaFree(cuda_result));
    CUDA_ASSERT_SUCCESS(cudaFree(cuda_diverg));
    CUDA_ASSERT_SUCCESS(cudaDeviceReset());
