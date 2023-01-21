@@ -4,9 +4,9 @@ namespace Fracticiel.Common.Coloring;
 
 public abstract class Colorizer<T> : IColorizer
 {
-    public abstract T[] Colorize(uint[] data);
+    public abstract T[] Colorize(int[] data);
 
-    public virtual Bitmap GetBitmap(uint[] data, int width, int height) => GetBitmap(Colorize(data), width, height);
+    public virtual Bitmap GetBitmap(int[] data, int width, int height) => GenerateBitmap(Colorize(data), width, height);
 
-    public abstract Bitmap GetBitmap(T[] data, int width, int height);
+    protected abstract Bitmap GenerateBitmap(T[] data, int width, int height);
 }

@@ -6,7 +6,7 @@
 #include "include.h"
 #include "common.h"
 
-__global__ void kernel_buddhabrot(uint32_t* result, int32_t dW, int32_t dH, double x0, double y0, double res, int32_t maxLoopCnt, double maxMagnitude, uint32_t maxValue, double* randoms) {
+__global__ void kernel_buddhabrot(int32_t* result, int32_t dW, int32_t dH, double x0, double y0, double res, int32_t multiSampling, int32_t maxLoopCnt, double maxMagnitude, int32_t maxValue, double* randoms) {
 
    maxMagnitude *= maxMagnitude; 
    
@@ -61,22 +61,22 @@ __global__ void kernel_buddhabrot(uint32_t* result, int32_t dW, int32_t dH, doub
    }
 }
 
-int32_t buddhabrot(uint32_t* result, const DataBlock* block, const Settings_Buddhabrot* settings, const double* randoms) {
-   uint32_t* cuda_result = 0;
+int32_t buddhabrot(int32_t* result, const DataBlock* block, const Settings_Buddhabrot* settings, const double* randoms) {
+   int32_t* cuda_result = 0;
    double* cuda_randoms = 0;
 
    CUDA_ASSERT_SUCCESS(cudaSetDevice(0));
    CUDA_ASSERT_SUCCESS(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
-   CUDA_ASSERT_SUCCESS(cudaMalloc((void**)&cuda_result, block->Width * block->Height * sizeof(uint32_t)));
+   CUDA_ASSERT_SUCCESS(cudaMalloc((void**)&cuda_result, block->Width * block->Height * sizeof(int32_t)));
    CUDA_ASSERT_SUCCESS(cudaMalloc((void**)&cuda_randoms, 2 * block->Width * block->Height * sizeof(double)));
    CUDA_ASSERT_SUCCESS(cudaMemcpy(cuda_randoms, randoms, 2 * block->Width * block->Height * sizeof(double), cudaMemcpyHostToDevice));
    CUDA_ASSERT_SUCCESS(cudaDeviceSynchronize());
    dim3 threadsPerBlock(16, 16);
    dim3 numBlocks(block->Width / threadsPerBlock.x + 1, block->Height / threadsPerBlock.y + 1);
-   kernel_buddhabrot << <numBlocks, threadsPerBlock >> > (cuda_result, block->Width, block->Height, block->X, block->Y, block->Resolution, settings->LoopCount, settings->Magnitude, settings->MaxValue, cuda_randoms);
+   kernel_buddhabrot << <numBlocks, threadsPerBlock >> > (cuda_result, block->Width, block->Height, block->X, block->Y, block->Resolution, block->MultiSampling, settings->LoopCount, settings->Magnitude, settings->MaxValue, cuda_randoms);
    CUDA_ASSERT_SUCCESS(cudaGetLastError());
    CUDA_ASSERT_SUCCESS(cudaDeviceSynchronize());
-   CUDA_ASSERT_SUCCESS(cudaMemcpy(result, cuda_result, block->Width * block->Height * sizeof(uint32_t), cudaMemcpyDeviceToHost));
+   CUDA_ASSERT_SUCCESS(cudaMemcpy(result, cuda_result, block->Width * block->Height * sizeof(int32_t), cudaMemcpyDeviceToHost));
    CUDA_ASSERT_SUCCESS(cudaFree(cuda_result));
    CUDA_ASSERT_SUCCESS(cudaFree(cuda_randoms));
    CUDA_ASSERT_SUCCESS(cudaDeviceReset());

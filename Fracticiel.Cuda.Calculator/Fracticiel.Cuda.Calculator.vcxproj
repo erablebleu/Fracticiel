@@ -86,7 +86,6 @@
     <CudaCompile Include="buddhabrot.cu" />
     <CudaCompile Include="julia.cu" />
     <CudaCompile Include="mandelbrot.cu" />
-    <CudaCompile Include="sampling.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h" />

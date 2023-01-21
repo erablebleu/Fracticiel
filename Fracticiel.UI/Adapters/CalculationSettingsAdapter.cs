@@ -34,10 +34,11 @@ public class CalculationSettingsAdapter : AdapterBase
 
     public DataBlock GetDataBlock() => new()
     {
-        Width = Width * MultiSampling,
-        Height = Height * MultiSampling,
+        Width = Width,
+        Height = Height,
         X = X,
         Y = Y,
-        Resolution = _widthRes / Width / MultiSampling,
+        Resolution = _widthRes / Width,
+        MultiSampling = MultiSampling,
     };
 }

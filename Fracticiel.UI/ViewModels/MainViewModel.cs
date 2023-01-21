@@ -45,7 +45,7 @@ public class MainViewModel : ViewModelBase
         new RGBColorizerAdapter(),
     };
 
-    private uint[] _data;
+    private int[] _data;
     private DataBlock _dataBlock;
     private ICommand? _exportCommand;
     private JuliaSettingsAdapter _juliaSettings = new();
@@ -108,69 +108,57 @@ public class MainViewModel : ViewModelBase
         yield break;
     }
 
-    private uint[] Calculate(DataBlock dataBlock, Func<DataBlock, uint[]> builder, bool useBlocks, int blockSize, int width, int height, int multiSampling)
+    private int[] Calculate(DataBlock dataBlock, Func<DataBlock, int[]> builder, bool useBlocks, int blockSize, int width, int height)
     {
+        if(!useBlocks)
+            return builder.Invoke(dataBlock);
+
         Stopwatch sw = new();
-        uint[] data;
+        int[] data = new int[width * height];
 
-        if (useBlocks)
+        (DataBlock, int X, int Y)[] blocks = Split(dataBlock, blockSize).ToArray();
+        byte[,][] grid = new byte[blocks.Max(b => b.X) + 1, blocks.Max(b => b.Y) + 1][];
+
+        // TODO: test parrallelization
+        for (int i = 0; i < blocks.Length; i++)
         {
-            data = new uint[width * height];
-            blockSize = blockSize / multiSampling * multiSampling; // must be a multiple of MultiSampling
+            (DataBlock block, int x, int y) = blocks[i];
+            sw.Restart();
 
-            (DataBlock, int X, int Y)[] blocks = Split(dataBlock, blockSize).ToArray();
-            byte[,][] grid = new byte[blocks.Max(b => b.X) + 1, blocks.Max(b => b.Y) + 1][];
+            int[] blockData = builder.Invoke(block);
 
-            // TODO: test parrallelization
-            for (int i = 0; i < blocks.Length; i++)
-            {
-                (DataBlock block, int x, int y) = blocks[i];
-                sw.Restart();
+            sw.Stop();
 
-                uint[] blockData = builder.Invoke(block);
+            // Add data to final array
+            for (int j = 0; j < block.Height; j++)
+                Array.Copy(blockData,
+                            j * block.Width,
+                            data,
+                            width * (y * blockSize + j) + x * blockSize,
+                            block.Width);
 
-                if (multiSampling > 1)
-                    blockData = Calculator.MultiSampling.GPUInvoke(blockData, block.Width / multiSampling, block.Height / multiSampling, multiSampling);
-
-                sw.Stop();
-
-                // Add data to final array
-                for (int j = 0; j < block.Height / multiSampling; j++)
-                    Array.Copy(blockData,
-                               j * block.Width / multiSampling,
-                               data,
-                               width * (y * blockSize / multiSampling + j) + x * blockSize / multiSampling,
-                               block.Width / multiSampling);
-
-                Debug.WriteLine($"bloc {i + 1}/{blocks.Length} calculated in {sw.ElapsedMilliseconds} ms");
-                Progress = (double)(i + 1) / blocks.Length;
-            }
+            Debug.WriteLine($"bloc {i + 1}/{blocks.Length} calculated in {sw.ElapsedMilliseconds} ms");
+            Progress = (double)(i + 1) / blocks.Length;
         }
-        else
-        {
-            data = builder.Invoke(dataBlock);
-            if (multiSampling > 1)
-                data = Fracticiel.Calculator.MultiSampling.GPUInvoke(data, width, height, multiSampling);
-        }
+
         return data;
     }
 
     private void Calculate()
     {
         _dataBlock = CalculationSettings.GetDataBlock();
-        Func<DataBlock, uint[]> builder = Mode switch
+        Func<DataBlock, int[]> builder = Mode switch
         {
-            0 => db => Fracticiel.Calculator.Mandelbrot.GPUInvoke(db, Mapper.Map<Mandelbrot.Settings>(MandelbrotSettings)),
-            1 => db => Fracticiel.Calculator.Buddhabrot.GPUInvoke(db, Mapper.Map<Buddhabrot.Settings>(BuddhabrotSettings)),
-            2 => db => Fracticiel.Calculator.Julia.GPUInvoke(db, Mapper.Map<Julia.Settings>(JuliaSettings)),
+            0 => db => Fracticiel.Calculator.Mandelbrot.Get(db, Mapper.Map<Mandelbrot.Settings>(MandelbrotSettings)),
+            1 => db => Fracticiel.Calculator.Buddhabrot.Get(db, Mapper.Map<Buddhabrot.Settings>(BuddhabrotSettings)),
+            2 => db => Fracticiel.Calculator.Julia.Get(db, Mapper.Map<Julia.Settings>(JuliaSettings)),
             _ => throw new NotImplementedException()
         };
         _data = Calculate(_dataBlock, builder,
             CalculationSettings.UseBlockCalculation,
             CalculationSettings.BlockCalculationSize,
             CalculationSettings.Width,
-            CalculationSettings.Height,
-            CalculationSettings.MultiSampling);
+            CalculationSettings.Height);
     }
 
     private void Colorize()

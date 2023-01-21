@@ -10,4 +10,5 @@ public struct DataBlock
     public double X;
     public double Y;
     public double Resolution;
+    public int MultiSampling;
 }

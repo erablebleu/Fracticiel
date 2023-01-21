@@ -20,14 +20,14 @@ public class RGBColorizer : Colorizer<int>
         }
     };
 
-    public override int[] Colorize(uint[] data)
+    public override int[] Colorize(int[] data)
     {
-        uint min = data.Min();
-        uint max = data.Max();
+        int min = data.Min();
+        int max = data.Max();
         return data.Select(i => Gradient.GetColor((double)(i - min) / (max - min)).ToArgb()).ToArray();
     }
 
-    public override Bitmap GetBitmap(int[] data, int width, int height)
+    protected override Bitmap GenerateBitmap(int[] data, int width, int height)
     {
         Bitmap result = new(width, height, PixelFormat.Format32bppArgb);
         BitmapData bmpData = result.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, result.PixelFormat);

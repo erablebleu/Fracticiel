@@ -15,6 +15,7 @@ struct DataBlock {
    double X;
    double Y;
    double Resolution;
+   int MultiSampling;
 };
 
 struct Settings_Mandelbrot {
@@ -41,10 +42,8 @@ EXTERN const char* getLastErrorString();
 EXTERN const char* getLastErrorFileName();
 EXTERN int getLastErrorFileLine();
 
-EXTERN int32_t mandelbrot(uint32_t* result, const DataBlock* block, const Settings_Mandelbrot* settings);
-EXTERN int32_t buddhabrot(uint32_t* result, const DataBlock* block, const Settings_Buddhabrot* settings, const double* randoms);
-EXTERN int32_t julia(uint32_t* result, const DataBlock* block, const Settings_Julia* settings);
-
-EXTERN int32_t multisampling(uint32_t* result, uint32_t* data, int32_t dW, int32_t dH, int32_t multisampling);
+EXTERN int32_t mandelbrot(int32_t* result, const DataBlock* block, const Settings_Mandelbrot* settings);
+EXTERN int32_t buddhabrot(int32_t* result, const DataBlock* block, const Settings_Buddhabrot* settings, const double* randoms);
+EXTERN int32_t julia(int32_t* result, const DataBlock* block, const Settings_Julia* settings);
 
 #endif // FRACTICIEL_CUDA_INCLUDE_H_

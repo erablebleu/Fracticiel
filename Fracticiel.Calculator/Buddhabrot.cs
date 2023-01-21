@@ -4,11 +4,11 @@ namespace Fracticiel.Calculator;
 
 public static partial class Buddhabrot
 {
-    private static Random Random = new(Guid.NewGuid().GetHashCode());
+    private static readonly Random Random = new(Guid.NewGuid().GetHashCode());
 
-    public static uint[] GPUInvoke(DataBlock block, Settings settings)
+    public static int[] Get(DataBlock block, Settings settings)
     {
-        uint[] result = new uint[block.Width * block.Height];
+        int[] result = new int[block.Width * block.Height];
         double[] randoms = new double[2 * block.Width * block.Height];
         for(int i = 0; i < block.Width * block.Height; i++)
         {
@@ -24,7 +24,7 @@ public static partial class Buddhabrot
     }
 
     [LibraryImport("Fracticiel.Cuda.Calculator.dll", EntryPoint = "buddhabrot")]
-    private static partial int GPUInvoke(uint[] result, DataBlock block, Settings settings, double[] randoms);
+    private static partial int GPUInvoke(int[] result, DataBlock block, Settings settings, double[] randoms);
 
     [StructLayout(LayoutKind.Sequential)]
     public struct Settings
