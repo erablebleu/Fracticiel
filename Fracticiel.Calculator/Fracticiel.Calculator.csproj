@@ -7,4 +7,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Fracticiel.Common\Fracticiel.Common.csproj" />
+  </ItemGroup>
+
 </Project>

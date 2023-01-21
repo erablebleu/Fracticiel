@@ -1,129 +1,88 @@
 ﻿using Fracticiel.Calculator;
+using Fracticiel.Common.Coloring;
+using Fracticiel.UI.Adapters;
 using Fracticiel.UI.MVVM;
+using Fracticiel.UI.Tools;
+using Fracticiel.UI.Tools.Serialization;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Security.Policy;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 
 namespace Fracticiel.UI.ViewModels;
 
+public class AdapterSaver<T> where T : AdapterBase, new()
+{
+    public readonly T Adapter;
+    private readonly string _filePath;
+
+    public AdapterSaver(string filePath)
+    {
+        _filePath = filePath;
+        Adapter = File.Exists(_filePath) ? JsonSerializer.Deserialize<T>(File.ReadAllText(_filePath)) ?? new T() : new T();
+        Adapter.PropertyChanged += (sender, args) => File.WriteAllText(_filePath, JsonSerializer.Serialize(Adapter));
+    }
+}
+
 public class MainViewModel : ViewModelBase
 {
-    private ICommand? _exportCommand;
-    private ICommand? _drawCommand;
-    private int _height = 1000;
-    private int _width = 1000;
-    private int _multiSampling = 2;
-    //private double _widthRes = 0.074942;
-    //private double _x = -1.41294724;
-    //private double _y = -0.037471;
-    private double _widthRes = 4;
-    private double _x = -2;
-    private double _y = -2;
     private BitmapSource? _bitmap;
-    private double _progress;
-    private bool _useBlockCalcultation = true;
-    private int _blockCalculationSize = 500;
-    private int _mode = 0;
+    private BuddhabrotSettingsAdapter _buddhabrotSettings = new();
+    private ICommand? _calculateCommand;
+    private CalculationSettingsAdapter _calculationSettings = new();
+    private int _coloringMode = 0;
+    private ICommand? _colorizeCommand;
 
-    private void Draw()
+    private ObservableCollection<ColorizerAdapter> _colorizers = new()
     {
-        DataBlock dataBlock = new()
-        {
-            Width = Width * MultiSampling,
-            Height = Height * MultiSampling,
-            X = X,
-            Y = Y,
-            Resolution = _widthRes / Width / MultiSampling,
-        };
-        Mandelbrot.Settings mSet = new()
-        {
-            LoopCount = 10000,
-            Magnitude = 2.0,
-        };
-        Buddhabrot.Settings bSet = new()
-        {
-            LoopCount = 10000,
-            Magnitude = 10,
-            MaxValue = 50000,
-        };
-        Julia.Settings jSet = new()
-        {
-            LoopCount = 2000,
-            Magnitude = 2,
-            CX = 0.285,
-            CY = 0.01,
-        };
-        Func<DataBlock, uint[]> builder = Mode switch
-        {
-            0 => db => Fracticiel.Calculator.Mandelbrot.GPUInvoke(db, mSet),
-            1 => db => Fracticiel.Calculator.Buddhabrot.GPUInvoke(db, bSet),
-            2 => db => Fracticiel.Calculator.Julia.GPUInvoke(db, jSet),
-            _ => throw new NotImplementedException()
-        };
+        new BWColorizerAdapter(),
+        new RGBColorizerAdapter(),
+    };
 
-        Draw(dataBlock, builder, UseBlockCalculation, BlockCalculationSize);
+    private uint[] _data;
+    private DataBlock _dataBlock;
+    private ICommand? _exportCommand;
+    private JuliaSettingsAdapter _juliaSettings = new();
+    private MandelbrotSettingsAdapter _mandelbrotSettings = new();
+    private int _mode = 1;
+    private double _progress;
+    private ColorizerAdapter _selectedColorizer;
+
+    public BitmapSource? Bitmap { get => _bitmap; set => Set(ref _bitmap, value); }
+    public BuddhabrotSettingsAdapter BuddhabrotSettings { get => _buddhabrotSettings; set => Set(ref _buddhabrotSettings, value); }
+    public ICommand CalculateCommand => _calculateCommand ??= new RelayCommand(OnCalculateCommand);
+    public CalculationSettingsAdapter CalculationSettings { get => _calculationSettings; set => Set(ref _calculationSettings, value); }
+    public int ColoringMode { get => _coloringMode; set => Set(ref _coloringMode, value); }
+    public ICommand ColorizeCommand => _colorizeCommand ??= new RelayCommand(OnColorizeCommand);
+    public ObservableCollection<ColorizerAdapter> Colorizers { get => _colorizers; set => Set(ref _colorizers, value); }
+    public ICommand ExportCommand => _exportCommand ??= new RelayCommand(OnExportCommand);
+    public JuliaSettingsAdapter JuliaSettings { get => _juliaSettings; set => Set(ref _juliaSettings, value); }
+    public MandelbrotSettingsAdapter MandelbrotSettings { get => _mandelbrotSettings; set => Set(ref _mandelbrotSettings, value); }
+    public int Mode { get => _mode; set => Set(ref _mode, value); }
+    public double Progress { get => _progress; set => Set(ref _progress, value); }
+    public ColorizerAdapter SelectedColorizer { get => _selectedColorizer; set => Set(ref _selectedColorizer, value); }
+
+    public override void Load()
+    {
+        BuddhabrotSettings = new AdapterSaver<BuddhabrotSettingsAdapter>(@"buddhabrot.json").Adapter;
+        MandelbrotSettings = new AdapterSaver<MandelbrotSettingsAdapter>(@"mandelbrot.json").Adapter;
+        JuliaSettings = new AdapterSaver<JuliaSettingsAdapter>(@"julia.json").Adapter;
+        CalculationSettings = new AdapterSaver<CalculationSettingsAdapter>(@"calculation.json").Adapter;
     }
 
-    private void Draw(DataBlock dataBlock, Func<DataBlock, uint[]> builder, bool useBlocks, int blockSize)
+    private static BitmapSource GetBitmap(int[] data, int width, int height)
     {
-        Stopwatch sw = new();
-        uint[] data;
-
-        if(useBlocks)
-        {
-            blockSize = blockSize / MultiSampling * MultiSampling; // must be a multiple of MultiSampling
-
-            (DataBlock, int X, int Y)[] blocks = Split(dataBlock, blockSize).ToArray();
-            byte[,][] grid = new byte[blocks.Max(b => b.X) + 1, blocks.Max(b => b.Y) + 1][];
-            byte[] bwData = new byte[Width * Height];
-
-            // TODO: test parrallelization
-            for (int i = 0; i < blocks.Length; i++)
-            {
-                (DataBlock block, int x, int y) = blocks[i];
-                sw.Restart();
-
-                uint[] blockData = builder.Invoke(block);
-
-                if (MultiSampling > 1)
-                    blockData = Calculator.MultiSampling.GPUInvoke(blockData, block.Width / MultiSampling, block.Height / MultiSampling, MultiSampling);
-
-                byte[] result = Colorizer.BW(blockData, 0, 255);
-
-                sw.Stop();
-
-                // Add data to final array
-                for (int j = 0; j < block.Height / MultiSampling; j++)
-                    Array.Copy(result,
-                               j * block.Width / MultiSampling,
-                               bwData,
-                               Width * (y * blockSize / MultiSampling + j) + x * blockSize / MultiSampling,
-                               block.Width / MultiSampling);
-
-                Debug.WriteLine($"bloc {i + 1}/{blocks.Length} calculated in {sw.ElapsedMilliseconds} ms");
-                Progress = (double)(i + 1) / blocks.Length;
-                Bitmap = GetBitmap(bwData, Width, Height);
-            }
-        }
-        else
-        {
-            data = builder.Invoke(dataBlock);
-            if (MultiSampling > 1)
-                data = Fracticiel.Calculator.MultiSampling.GPUInvoke(data, Width, Height, MultiSampling);
-            Bitmap = GetBitmap(Fracticiel.Calculator.Colorizer.BW(data, 0, 255), Width, Height);
-        }
+        PixelFormat pf = PixelFormats.Bgr32;
+        int rawStride = (width * pf.BitsPerPixel + 7) / 8;
+        BitmapSource result = new TransformedBitmap(BitmapSource.Create(width, height, 96, 96, pf, null, data, rawStride), new RotateTransform(90));
+        result.Freeze();
+        return result;
     }
 
     private static IEnumerable<(DataBlock, int X, int Y)> Split(DataBlock dataBlock, int size)
@@ -149,30 +108,91 @@ public class MainViewModel : ViewModelBase
         yield break;
     }
 
-    private static BitmapSource GetBitmap(byte[] data, int width, int height)
+    private uint[] Calculate(DataBlock dataBlock, Func<DataBlock, uint[]> builder, bool useBlocks, int blockSize, int width, int height, int multiSampling)
     {
-        PixelFormat pf = PixelFormats.Gray8;
-        int rawStride = (width * pf.BitsPerPixel + 7) / 8;
-        BitmapSource result = new TransformedBitmap(BitmapSource.Create(width, height, 96, 96, pf, null, data, rawStride), new RotateTransform(90));
-        result.Freeze();
-        // Create a BitmapSource.
-        return result;
+        Stopwatch sw = new();
+        uint[] data;
 
+        if (useBlocks)
+        {
+            data = new uint[width * height];
+            blockSize = blockSize / multiSampling * multiSampling; // must be a multiple of MultiSampling
+
+            (DataBlock, int X, int Y)[] blocks = Split(dataBlock, blockSize).ToArray();
+            byte[,][] grid = new byte[blocks.Max(b => b.X) + 1, blocks.Max(b => b.Y) + 1][];
+
+            // TODO: test parrallelization
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                (DataBlock block, int x, int y) = blocks[i];
+                sw.Restart();
+
+                uint[] blockData = builder.Invoke(block);
+
+                if (multiSampling > 1)
+                    blockData = Calculator.MultiSampling.GPUInvoke(blockData, block.Width / multiSampling, block.Height / multiSampling, multiSampling);
+
+                sw.Stop();
+
+                // Add data to final array
+                for (int j = 0; j < block.Height / multiSampling; j++)
+                    Array.Copy(blockData,
+                               j * block.Width / multiSampling,
+                               data,
+                               width * (y * blockSize / multiSampling + j) + x * blockSize / multiSampling,
+                               block.Width / multiSampling);
+
+                Debug.WriteLine($"bloc {i + 1}/{blocks.Length} calculated in {sw.ElapsedMilliseconds} ms");
+                Progress = (double)(i + 1) / blocks.Length;
+            }
+        }
+        else
+        {
+            data = builder.Invoke(dataBlock);
+            if (multiSampling > 1)
+                data = Fracticiel.Calculator.MultiSampling.GPUInvoke(data, width, height, multiSampling);
+        }
+        return data;
     }
 
-    public ICommand ExportCommand => _exportCommand ??= new RelayCommand(OnExportCommand);
-    public ICommand DrawCommand => _drawCommand ??= new RelayCommand(OnDrawCommand);
-    public int Height { get => _height; set => Set(ref _height, value); }
-    public int MultiSampling { get => _multiSampling; set => Set(ref _multiSampling, value); }
-    public int Width { get => _width; set => Set(ref _width, value); }
-    public double WidthRes { get => _widthRes; set => Set(ref _widthRes, value); }
-    public double X { get => _x; set => Set(ref _x, value); }
-    public double Y { get => _y; set => Set(ref _y, value); }
-    public double Progress { get => _progress; set => Set(ref _progress, value); }
-    public BitmapSource? Bitmap { get => _bitmap; set => Set(ref _bitmap, value); }
-    public bool UseBlockCalculation { get => _useBlockCalcultation; set => Set(ref _useBlockCalcultation, value); }
-    public int BlockCalculationSize { get => _blockCalculationSize; set => Set(ref _blockCalculationSize, value); }
-    public int Mode { get => _mode; set => Set(ref _mode, value); }
+    private void Calculate()
+    {
+        _dataBlock = CalculationSettings.GetDataBlock();
+        Func<DataBlock, uint[]> builder = Mode switch
+        {
+            0 => db => Fracticiel.Calculator.Mandelbrot.GPUInvoke(db, Mapper.Map<Mandelbrot.Settings>(MandelbrotSettings)),
+            1 => db => Fracticiel.Calculator.Buddhabrot.GPUInvoke(db, Mapper.Map<Buddhabrot.Settings>(BuddhabrotSettings)),
+            2 => db => Fracticiel.Calculator.Julia.GPUInvoke(db, Mapper.Map<Julia.Settings>(JuliaSettings)),
+            _ => throw new NotImplementedException()
+        };
+        _data = Calculate(_dataBlock, builder,
+            CalculationSettings.UseBlockCalculation,
+            CalculationSettings.BlockCalculationSize,
+            CalculationSettings.Width,
+            CalculationSettings.Height,
+            CalculationSettings.MultiSampling);
+    }
+
+    private void Colorize()
+    {
+        IColorizer colorizer = SelectedColorizer switch
+        {
+            BWColorizerAdapter => Mapper.Map<BWColorizer>(SelectedColorizer),
+            RGBColorizerAdapter => Mapper.Map<RGBColorizer>(SelectedColorizer),
+            _ => throw new NotImplementedException()
+        };
+        Bitmap = colorizer.GetBitmap(_data, CalculationSettings.Width, CalculationSettings.Height).ToBitmapImage();
+    }
+
+    private void OnCalculateCommand()
+    {
+        Task.Run(Calculate);
+    }
+
+    private void OnColorizeCommand()
+    {
+        Task.Run(Colorize);
+    }
 
     private void OnExportCommand()
     {
@@ -192,10 +212,5 @@ public class MainViewModel : ViewModelBase
         using var fileStream = new FileStream(sfd.FileName, FileMode.Create);
         encoder.Frames.Add(BitmapFrame.Create(Bitmap));
         encoder.Save(fileStream);
-    }
-
-    private void OnDrawCommand()
-    {
-        Task.Run(Draw);
     }
 }

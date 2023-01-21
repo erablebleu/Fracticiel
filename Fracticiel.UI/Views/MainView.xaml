@@ -8,7 +8,7 @@
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:MainViewModel}"
-        Title="MainView" Height="450" Width="800">
+        Title="MainView" Height="800" Width="800">
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="File">
@@ -16,9 +16,6 @@
             </MenuItem>
         </Menu>
         <StackPanel DockPanel.Dock="Top">
-            <TextBlock x:Name="tb_pos" />
-            <TextBlock x:Name="tb_state" />
-            <TextBlock x:Name="tb_time" />
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -45,28 +42,97 @@
                 <TextBlock Grid.Column="0" Grid.Row="7" Text="Block Calculation Size"/>
                 <TextBlock Grid.Column="0" Grid.Row="8" Text="Mode"/>
 
-                <xctk:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="10" Maximum="10000" Value="{Binding Width}"/>
-                <xctk:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="10" Maximum="10000" Value="{Binding Height}"/>
-                <xctk:DoubleUpDown Grid.Column="1" Grid.Row="2" Minimum="-2" Maximum="2" Value="{Binding X}"/>
-                <xctk:DoubleUpDown Grid.Column="1" Grid.Row="3" Minimum="-2" Maximum="2" Value="{Binding Y}"/>
-                <xctk:DoubleUpDown Grid.Column="1" Grid.Row="4" Minimum="0" Maximum="4" Value="{Binding WidthRes}"/>
-                <xctk:IntegerUpDown Grid.Column="1" Grid.Row="5" Minimum="1" Maximum="64" Value="{Binding MultiSampling}"/>
-                <CheckBox Grid.Column="1" Grid.Row="6" IsChecked="{Binding UseBlockCalculation}"/>
-                <xctk:IntegerUpDown Grid.Column="1" Grid.Row="7" Minimum="10" Maximum="10000" Value="{Binding BlockCalculationSize}" IsEnabled="{Binding UseBlockCalculation}"/>
-                <ComboBox Grid.Column="1" Grid.Row="8" SelectedIndex="{Binding Mode}">
-                    <ComboBoxItem>Mandelbrot</ComboBoxItem>
-                    <ComboBoxItem>Buddhabrot</ComboBoxItem>
-                    <ComboBoxItem>Julia</ComboBoxItem>
-                </ComboBox>
-
+                <xctk:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="10" Maximum="10000" Value="{Binding CalculationSettings.Width}"/>
+                <xctk:IntegerUpDown Grid.Column="1" Grid.Row="1" Minimum="10" Maximum="10000" Value="{Binding CalculationSettings.Height}"/>
+                <xctk:DoubleUpDown Grid.Column="1" Grid.Row="2" Minimum="-2" Maximum="2" Value="{Binding CalculationSettings.X}"/>
+                <xctk:DoubleUpDown Grid.Column="1" Grid.Row="3" Minimum="-2" Maximum="2" Value="{Binding CalculationSettings.Y}"/>
+                <xctk:DoubleUpDown Grid.Column="1" Grid.Row="4" Minimum="0" Maximum="4" Value="{Binding CalculationSettings.WidthRes}"/>
+                <xctk:IntegerUpDown Grid.Column="1" Grid.Row="5" Minimum="1" Maximum="64" Value="{Binding CalculationSettings.MultiSampling}"/>
+                <CheckBox Grid.Column="1" Grid.Row="6" IsChecked="{Binding CalculationSettings.UseBlockCalculation}"/>
+                <xctk:IntegerUpDown Grid.Column="1" Grid.Row="7" Minimum="10" Maximum="10000" Value="{Binding CalculationSettings.BlockCalculationSize}" IsEnabled="{Binding CalculationSettings.UseBlockCalculation}"/>                
             </Grid>
-            <Button Content="Draw" Command="{Binding DrawCommand}"/>
+            
+            <TabControl SelectedIndex="{Binding Mode}">
+                <TabItem Header="Mandelbrot">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Column="0" Grid.Row="0" Text="LoopCount"/>
+                        <TextBlock Grid.Column="0" Grid.Row="1" Text="Magnitude"/>
+
+                        <xctk:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="1" Value="{Binding MandelbrotSettings.LoopCount}"/>
+                        <xctk:DoubleUpDown Grid.Column="1" Grid.Row="1" Minimum="0.01" Value="{Binding MandelbrotSettings.Magnitude}"/>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Buddhabrot">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Column="0" Grid.Row="0" Text="LoopCount"/>
+                        <TextBlock Grid.Column="0" Grid.Row="1" Text="Magnitude"/>
+                        <TextBlock Grid.Column="0" Grid.Row="2" Text="MaxValue"/>
+
+                        <xctk:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="1" Value="{Binding BuddhabrotSettings.LoopCount}"/>
+                        <xctk:DoubleUpDown Grid.Column="1" Grid.Row="1" Minimum="0.01" Value="{Binding BuddhabrotSettings.Magnitude}"/>
+                        <xctk:IntegerUpDown Grid.Column="1" Grid.Row="2" Minimum="100" Value="{Binding BuddhabrotSettings.MaxValue}"/>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Julia">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Column="0" Grid.Row="0" Text="LoopCount"/>
+                        <TextBlock Grid.Column="0" Grid.Row="1" Text="Magnitude"/>
+                        <TextBlock Grid.Column="0" Grid.Row="2" Text="CX"/>
+                        <TextBlock Grid.Column="0" Grid.Row="3" Text="CY"/>
+
+                        <xctk:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="1" Value="{Binding JuliaSettings.LoopCount}"/>
+                        <xctk:DoubleUpDown Grid.Column="1" Grid.Row="1" Minimum="0.01" Value="{Binding JuliaSettings.Magnitude}"/>
+                        <xctk:DoubleUpDown Grid.Column="1" Grid.Row="2" Minimum="-2" Maximum="2" Value="{Binding JuliaSettings.CX}"/>
+                        <xctk:DoubleUpDown Grid.Column="1" Grid.Row="3" Minimum="-2" Maximum="2" Value="{Binding JuliaSettings.CY}"/>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+            <Button Content="Calculate" Command="{Binding CalculateCommand}"/>
+
+            <TabControl ItemsSource="{Binding Colorizers}" SelectedItem="{Binding SelectedColorizer}" >
+                <TabControl.ItemTemplate>
+                    <DataTemplate>
+                        <Label Content="{Binding ????????}"/>
+                    </DataTemplate>
+                </TabControl.ItemTemplate>
+            </TabControl>
+
+
+            <Button Content="Colorize" Command="{Binding ColorizeCommand}"/>
             <ProgressBar Value="{Binding Progress}" Maximum="1" Height="5"/>
         </StackPanel>
         <Border Background="Black">
             <Viewbox Stretch="Uniform" >
                 <Image x:Name="image" Source="{Binding Bitmap}"/>
-
             </Viewbox>
 
             <Border.ContextMenu>

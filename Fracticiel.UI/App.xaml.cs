@@ -1,5 +1,8 @@
 ﻿using AutoMapper;
+using Fracticiel.Calculator;
+using Fracticiel.Common.Coloring;
 using Fracticiel.Common.Injection;
+using Fracticiel.UI.Adapters;
 using Fracticiel.UI.MVVM;
 using Fracticiel.UI.ViewModels;
 using System.Globalization;
@@ -50,6 +53,15 @@ public partial class App : Application
             })
             .IncludeAllDerived();
 
+        c.CreateMap<MandelbrotSettingsAdapter, Mandelbrot.Settings>().ReverseMap();
+        c.CreateMap<BuddhabrotSettingsAdapter, Buddhabrot.Settings>().ReverseMap();
+        c.CreateMap<JuliaSettingsAdapter, Julia.Settings>().ReverseMap();
+
+        c.CreateMap<GradientStopAdapter, GradientStop>().ReverseMap();
+        c.CreateMap<GradientAdapter, Gradient>().ReverseMap();
+
+        c.CreateMap<BWColorizerAdapter, BWColorizer>().ReverseMap();
+        c.CreateMap<RGBColorizerAdapter, RGBColorizer>().ReverseMap();
 
         /*
         c.CreateMap<NailMap, NailMapAdapter>()

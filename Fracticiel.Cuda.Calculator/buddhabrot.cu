@@ -6,92 +6,79 @@
 #include "include.h"
 #include "common.h"
 
-__global__ void kernel_buddhabrot_divergence(bool* result, int32_t dW, int32_t dH, double x0, double y0, double res, int32_t maxLoopCnt, double maxMagnitude) {
+__global__ void kernel_buddhabrot(uint32_t* result, int32_t dW, int32_t dH, double x0, double y0, double res, int32_t maxLoopCnt, double maxMagnitude, uint32_t maxValue, double* randoms) {
+
+   maxMagnitude *= maxMagnitude; 
+   
    int i = (blockIdx.x * blockDim.x + threadIdx.x);
    int j = (blockIdx.y * blockDim.y + threadIdx.y);
 
    if (i >= dW || j >= dH)
       return;
 
-   double cx = x0 + (double)i * res;
-   double cy = y0 + (double)j * res;
-   bool* p = &result[j * dW + i];
+   double cx = randoms[2 * j * dW + i];
+   double cy = randoms[2 * j * dW + i + 1];
+
    double x = 0.0f;
    double y = 0.0f;
    double tmp;
-   uint32_t cnt = 0;
+   double magnitude;
 
-   maxMagnitude *= maxMagnitude;
-
-   while ((x * x + y * y) <= maxMagnitude && cnt < maxLoopCnt)
+   for (int k = 0; k < maxLoopCnt; k++)
    {
       tmp = x * x - y * y + cx;
       y = 2.0f * x * y + cy;
       x = tmp;
-      cnt++;
+      magnitude = x * x + y * y;
+
+      if(magnitude > maxMagnitude)
+         break;
    }
 
-   *p = cnt >= maxLoopCnt;
-}
-
-__global__ void kernel_buddhabrot(uint32_t* result, bool* diverg, int32_t dW, int32_t dH, double x0, double y0, double res, int32_t maxLoopCnt, double maxMagnitude, uint32_t maxValue) {
-   int i = (blockIdx.x * blockDim.x + threadIdx.x);
-   int j = (blockIdx.y * blockDim.y + threadIdx.y);
-
-   if (i >= dW || j >= dH || diverg[j * dW + i])
+   if(magnitude <= maxMagnitude) // not divergent
       return;
 
-   // TODO: divergent loop here
+   x = 0.0f;
+   y = 0.0f;
 
-   // TODO: random cx, cy
-   double cx = x0 + (double)i * res;
-   double cy = y0 + (double)j * res;
-   uint32_t cnt = 0;
-   double x = 0.0f;
-   double y = 0.0f;
-   double tmp;
-
-   maxMagnitude *= maxMagnitude;
-
-   while ((x * x + y * y) <= maxMagnitude && cnt < maxLoopCnt)
+   for (int k = 0; k < maxLoopCnt; k++)
    {
       tmp = x * x - y * y + cx;
       y = 2.0f * x * y + cy;
       x = tmp;
+      magnitude = x * x + y * y;
 
       i = (x - x0) / res;
       j = (y - y0) / res;
 
-      if (i >= 0
-          && i < dW
-          && j >= 0
-          && j < dH
-          && result[j * dW + i] < maxValue) {
+      if (i >= 0 && i < dW
+          && j >= 0 && j < dH) {
          result[j * dW + i]++;
       }
-      cnt++;
+
+      if (magnitude > maxMagnitude)
+         break;
    }
 }
 
-int32_t buddhabrot(uint32_t* result, const DataBlock* block, const Settings_Buddhabrot* settings) {
+int32_t buddhabrot(uint32_t* result, const DataBlock* block, const Settings_Buddhabrot* settings, const double* randoms) {
    uint32_t* cuda_result = 0;
-   bool* cuda_diverg = 0;
+   double* cuda_randoms = 0;
 
    CUDA_ASSERT_SUCCESS(cudaSetDevice(0));
    CUDA_ASSERT_SUCCESS(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
    CUDA_ASSERT_SUCCESS(cudaMalloc((void**)&cuda_result, block->Width * block->Height * sizeof(uint32_t)));
-   CUDA_ASSERT_SUCCESS(cudaMalloc((void**)&cuda_diverg, block->Width * block->Height * sizeof(bool)));
+   CUDA_ASSERT_SUCCESS(cudaMalloc((void**)&cuda_randoms, 2 * block->Width * block->Height * sizeof(double)));
+   CUDA_ASSERT_SUCCESS(cudaMemcpy(cuda_randoms, randoms, 2 * block->Width * block->Height * sizeof(double), cudaMemcpyHostToDevice));
+   CUDA_ASSERT_SUCCESS(cudaDeviceSynchronize());
    dim3 threadsPerBlock(16, 16);
    dim3 numBlocks(block->Width / threadsPerBlock.x + 1, block->Height / threadsPerBlock.y + 1);
-   kernel_buddhabrot_divergence << <numBlocks, threadsPerBlock >> > (cuda_diverg, block->Width, block->Height, block->X, block->Y, block->Resolution, settings->LoopCount, settings->Magnitude);
-   CUDA_ASSERT_SUCCESS(cudaGetLastError());
-   CUDA_ASSERT_SUCCESS(cudaDeviceSynchronize());
-   kernel_buddhabrot << <numBlocks, threadsPerBlock >> > (cuda_result, cuda_diverg, block->Width, block->Height, block->X, block->Y, block->Resolution, settings->LoopCount, settings->Magnitude, settings->MaxValue);
+   kernel_buddhabrot << <numBlocks, threadsPerBlock >> > (cuda_result, block->Width, block->Height, block->X, block->Y, block->Resolution, settings->LoopCount, settings->Magnitude, settings->MaxValue, cuda_randoms);
    CUDA_ASSERT_SUCCESS(cudaGetLastError());
    CUDA_ASSERT_SUCCESS(cudaDeviceSynchronize());
    CUDA_ASSERT_SUCCESS(cudaMemcpy(result, cuda_result, block->Width * block->Height * sizeof(uint32_t), cudaMemcpyDeviceToHost));
    CUDA_ASSERT_SUCCESS(cudaFree(cuda_result));
-   CUDA_ASSERT_SUCCESS(cudaFree(cuda_diverg));
+   CUDA_ASSERT_SUCCESS(cudaFree(cuda_randoms));
    CUDA_ASSERT_SUCCESS(cudaDeviceReset());
 
    return cudaSuccess;

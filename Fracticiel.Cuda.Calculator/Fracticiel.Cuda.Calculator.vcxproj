@@ -84,7 +84,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="buddhabrot.cu" />
-    <CudaCompile Include="colorize.cu" />
     <CudaCompile Include="julia.cu" />
     <CudaCompile Include="mandelbrot.cu" />
     <CudaCompile Include="sampling.cu" />
