@@ -1,7 +1,8 @@
-﻿using Fracticiel.UI.MVVM;
+﻿using System.ComponentModel;
 
 namespace Fracticiel.UI.Adapters;
 
+[Description("RGB")]
 public class RGBColorizerAdapter : ColorizerAdapter
 {
     private GradientAdapter _gradient = new();

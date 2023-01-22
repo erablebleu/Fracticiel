@@ -3,4 +3,5 @@
                     xmlns:converters="clr-namespace:Fracticiel.UI.Resources.Converters">
 
     <converters:ColorConverter x:Key="ColorConverter" />
+    <converters:DescriptionConverter x:Key="DescriptionConverter" />
 </ResourceDictionary>

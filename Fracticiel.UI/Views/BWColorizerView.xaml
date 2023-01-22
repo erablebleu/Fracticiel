@@ -11,6 +11,6 @@
              d:DataContext="{d:DesignInstance adapters:BWColorizerAdapter}"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-            
+        <xctk:RangeSlider LowerValue="{Binding Min}" HigherValue="{Binding Max}" Minimum="0" Maximum="1"/>
     </Grid>
 </UserControl>

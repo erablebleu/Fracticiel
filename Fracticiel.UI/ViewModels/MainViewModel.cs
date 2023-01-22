@@ -52,7 +52,7 @@ public class MainViewModel : ViewModelBase
     private MandelbrotSettingsAdapter _mandelbrotSettings = new();
     private int _mode = 1;
     private double _progress;
-    private ColorizerAdapter _selectedColorizer;
+    private ColorizerAdapter? _selectedColorizer;
 
     public BitmapSource? Bitmap { get => _bitmap; set => Set(ref _bitmap, value); }
     public BuddhabrotSettingsAdapter BuddhabrotSettings { get => _buddhabrotSettings; set => Set(ref _buddhabrotSettings, value); }
@@ -66,7 +66,7 @@ public class MainViewModel : ViewModelBase
     public MandelbrotSettingsAdapter MandelbrotSettings { get => _mandelbrotSettings; set => Set(ref _mandelbrotSettings, value); }
     public int Mode { get => _mode; set => Set(ref _mode, value); }
     public double Progress { get => _progress; set => Set(ref _progress, value); }
-    public ColorizerAdapter SelectedColorizer { get => _selectedColorizer; set => Set(ref _selectedColorizer, value); }
+    public ColorizerAdapter? SelectedColorizer { get => _selectedColorizer; set => Set(ref _selectedColorizer, value); }
 
     public override void Load()
     {
@@ -74,15 +74,8 @@ public class MainViewModel : ViewModelBase
         MandelbrotSettings = new AdapterSaver<MandelbrotSettingsAdapter>(@"mandelbrot.json").Adapter;
         JuliaSettings = new AdapterSaver<JuliaSettingsAdapter>(@"julia.json").Adapter;
         CalculationSettings = new AdapterSaver<CalculationSettingsAdapter>(@"calculation.json").Adapter;
-    }
 
-    private static BitmapSource GetBitmap(int[] data, int width, int height)
-    {
-        PixelFormat pf = PixelFormats.Bgr32;
-        int rawStride = (width * pf.BitsPerPixel + 7) / 8;
-        BitmapSource result = new TransformedBitmap(BitmapSource.Create(width, height, 96, 96, pf, null, data, rawStride), new RotateTransform(90));
-        result.Freeze();
-        return result;
+        SelectedColorizer = Colorizers.First();
     }
 
     private static IEnumerable<(DataBlock, int X, int Y)> Split(DataBlock dataBlock, int size)

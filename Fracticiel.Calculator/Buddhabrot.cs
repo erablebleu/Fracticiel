@@ -8,29 +8,19 @@ public static partial class Buddhabrot
 
     public static int[] Get(DataBlock block, Settings settings)
     {
-        int[] result = new int[block.Width * block.Height];
-        double[] randoms = new double[2 * block.Width * block.Height];
-        for(int i = 0; i < block.Width * block.Height; i++)
-        {
-            randoms[2 * i] = block.X + block.Width * block.Resolution * Random.NextDouble();
-            randoms[2 * i + 1] = block.Y + block.Height * block.Resolution * Random.NextDouble();
-
-            //randoms[2 * i] = -1.5 + 3 * Random.NextDouble();
-            //randoms[2 * i + 1] = - 1.5 + 3 * Random.NextDouble();
-        }
-            
-        CudaException.Assert(GPUInvoke(result, block, settings, randoms));
+        int[] result = new int[block.Width * block.Height];            
+        CudaException.Assert(GPUInvoke(result, block, settings));
         return result;
     }
 
     [LibraryImport("Fracticiel.Cuda.Calculator.dll", EntryPoint = "buddhabrot")]
-    private static partial int GPUInvoke(int[] result, DataBlock block, Settings settings, double[] randoms);
+    private static partial int GPUInvoke(int[] result, DataBlock block, Settings settings);
 
     [StructLayout(LayoutKind.Sequential)]
     public struct Settings
     {
         public int LoopCount;
         public double Magnitude;
-        public int MaxValue;
+        public int StartPointCount;
     }
 }

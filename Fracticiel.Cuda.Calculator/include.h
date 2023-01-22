@@ -27,7 +27,7 @@ struct Settings_Buddhabrot {
 
    int32_t LoopCount;
    double Magnitude;
-   int32_t MaxValue;
+   int32_t StartPointCount;
 };
 struct Settings_Julia {
 
@@ -43,7 +43,7 @@ EXTERN const char* getLastErrorFileName();
 EXTERN int getLastErrorFileLine();
 
 EXTERN int32_t mandelbrot(int32_t* result, const DataBlock* block, const Settings_Mandelbrot* settings);
-EXTERN int32_t buddhabrot(int32_t* result, const DataBlock* block, const Settings_Buddhabrot* settings, const double* randoms);
+EXTERN int32_t buddhabrot(int32_t* result, const DataBlock* block, const Settings_Buddhabrot* settings);
 EXTERN int32_t julia(int32_t* result, const DataBlock* block, const Settings_Julia* settings);
 
 #endif // FRACTICIEL_CUDA_INCLUDE_H_

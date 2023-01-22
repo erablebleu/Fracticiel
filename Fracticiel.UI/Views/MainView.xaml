@@ -88,7 +88,7 @@
 
                         <xctk:IntegerUpDown Grid.Column="1" Grid.Row="0" Minimum="1" Value="{Binding BuddhabrotSettings.LoopCount}"/>
                         <xctk:DoubleUpDown Grid.Column="1" Grid.Row="1" Minimum="0.01" Value="{Binding BuddhabrotSettings.Magnitude}"/>
-                        <xctk:IntegerUpDown Grid.Column="1" Grid.Row="2" Minimum="100" Value="{Binding BuddhabrotSettings.MaxValue}"/>
+                        <xctk:IntegerUpDown Grid.Column="1" Grid.Row="2" Minimum="100" Value="{Binding BuddhabrotSettings.StartPointCount}"/>
                     </Grid>
                 </TabItem>
 
@@ -118,10 +118,10 @@
             </TabControl>
             <Button Content="Calculate" Command="{Binding CalculateCommand}"/>
 
-            <TabControl ItemsSource="{Binding Colorizers}" SelectedItem="{Binding SelectedColorizer}" >
+            <TabControl ItemsSource="{Binding Colorizers}" SelectedItem="{Binding SelectedColorizer}">
                 <TabControl.ItemTemplate>
                     <DataTemplate>
-                        <Label Content="{Binding ????????}"/>
+                        <Label Content="{Binding Converter={StaticResource DescriptionConverter}}"/>
                     </DataTemplate>
                 </TabControl.ItemTemplate>
             </TabControl>

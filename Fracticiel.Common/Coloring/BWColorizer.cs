@@ -6,11 +6,20 @@ namespace Fracticiel.Common.Coloring;
 
 public class BWColorizer : Colorizer<byte>
 {
+    public double Max;
+    public double Min;
+
     public override byte[] Colorize(int[] data)
     {
-        int min = data.Min();
-        int max = data.Max();
-        return data.Select(i => 255 * (i - min) / (max - min)).Select(i => (byte)i).ToArray();
+        int max = (int)(Max * data.Max());
+        int min = (int)(Min * data.Max());
+        int d = max - min;
+        byte[] result = new byte[data.Length];
+
+        for (int i = 0; i < data.Length; i++)
+            result[i] = (byte)(data[i] <= min ? 0 : data[i] >= max ? 255 : ((data[i] - min) * 255 / d));
+
+        return result;
     }
 
     protected override Bitmap GenerateBitmap(byte[] data, int width, int height)
